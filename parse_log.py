@@ -5,6 +5,7 @@
 import re
 
 log_file='./log'
+inc_c = set()
 with open(log_file) as f:
 	for line in f:
 		line0 = line.split(':')[0]
@@ -12,4 +13,8 @@ with open(log_file) as f:
 		line1 = line1.strip()
 		s = re.search('\.c', line1)
 		if s:
-			print line1
+			inc_c.add(line1)
+
+for i in inc_c:
+	print i
+#	print i.split(' ')[1]

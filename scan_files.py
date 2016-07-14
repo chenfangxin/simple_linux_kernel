@@ -8,7 +8,15 @@ c_files = []
 S_files = []
 h_files = []
 o_files = []
-used_code_files = []
+
+# the used_files item format
+# {
+#	 "obj_file":"./xxx/yyy/zzz.o",
+#	 "depend_files":{"./xxx/yyy/zzz.c","./xxx/yyy/zzz.h"}
+# }
+
+
+used_files = {}
 
 def scan_all_file(path):
 	for dirpath, dirnames, filenames in os.walk(path):
