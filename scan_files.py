@@ -7,17 +7,27 @@ root='./linux-4.4.10'
 c_files = []
 S_files = []
 h_files = []
+o_files = []
+used_code_files = []
 
-for dirpath, dirnames, filenames in os.walk(root):
-	c = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.c']
-	h = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.h']
-	S = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.S']
+def scan_all_file(path):
+	for dirpath, dirnames, filenames in os.walk(path):
+		c = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.c']
+		h = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.h']
+		S = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.S']
 	
-	c_files.extend(c)
-	S_files.extend(S)
-	h_files.extend(h)
+		c_files.extend(c)
+		S_files.extend(S)
+		h_files.extend(h)
 
-print "num of c : %d" % len(c_files)
-print "num of h : %d" % len(h_files)
-print "num of S : %d" % len(S_files)
+def scan_o_file(path):
+	for dirpath, dirnames, filenames in os.walk(path):
+#		o = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.o']
+		o = [item for item in filenames if os.path.splitext(item)[1]=='.o']
+		o_files.extend(o)	
+	
+if __name__ == '__main__':
+	scan_o_file(root)
+	print "num of o : %d" % len(o_files)
+	print o_files
 
