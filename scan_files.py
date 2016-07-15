@@ -1,41 +1,50 @@
 #!/usr/bin/python
 
 import os
+import re
 
 root='./linux-4.4.10'
 
-c_files = []
-S_files = []
-h_files = []
-o_files = []
+used_files = set()
+depends_files = set()
 
-# the used_files item format
-# {
-#	 "obj_file":"./xxx/yyy/zzz.o",
-#	 "depend_files":{"./xxx/yyy/zzz.c","./xxx/yyy/zzz.h"}
-# }
-
-
-used_files = {}
-
-def scan_all_file(path):
+def get_source_file(path):
 	for dirpath, dirnames, filenames in os.walk(path):
-		c = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.c']
-		h = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.h']
-		S = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.S']
-	
-		c_files.extend(c)
-		S_files.extend(S)
-		h_files.extend(h)
+		for item in filenames:
+			if os.path.splitext(item)[1]=='.o':
+				n = os.path.splitext(item)[0]
+				o = n + '.o'
+				c = n + '.c'
+				s = n + '.s'
+				S = n + '.S'
 
-def scan_o_file(path):
-	for dirpath, dirnames, filenames in os.walk(path):
-#		o = [os.path.splitext(item)[0] for item in filenames if os.path.splitext(item)[1]=='.o']
-		o = [item for item in filenames if os.path.splitext(item)[1]=='.o']
-		o_files.extend(o)	
+				full = ''	
+				if c in filenames:
+					full = dirpath + '/' + c
+				
+				if s in filenames:
+					full = dirpath + '/' + s
+
+				if S in filenames:
+					full = dirpath + '/' + S
+
+				if full:
+					used_files.add(full)	
 	
+def get_depends_files():
+	for i in used_files:
+		with open(i) as f:
+			line = f.readline()
+			line = line.strip()
+			s = re.search('^#include', line)
+			if s:
+				print line
+#				print line.split(' ')[1]
+#				depends_files.add(line.split(' ')[1])
+
 if __name__ == '__main__':
-	scan_o_file(root)
-	print "num of o : %d" % len(o_files)
-	print o_files
-
+	get_source_file(root)
+	print "num of used files : %d" % len(used_files)
+	get_depends_files()
+	print "num of depends files : %d" % len(depends_files)
+	
