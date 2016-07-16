@@ -10,42 +10,41 @@ depends_files = set()
 
 def get_source_file(path):
 	for dirpath, dirnames, filenames in os.walk(path):
+		for item in dirnames:
+			d = os.path.join(dirpath, item)
+			if os.path.islink(d):
+				os.remove(d)
+
 		for item in filenames:
+			d = os.path.join(dirpath, item)
+			if os.path.islink(d):
+				os.remove(d)
+				continue
+
 			if os.path.splitext(item)[1]=='.o':
 				n = os.path.splitext(item)[0]
-				o = n + '.o'
 				c = n + '.c'
 				s = n + '.s'
 				S = n + '.S'
 
 				full = ''	
 				if c in filenames:
-					full = dirpath + '/' + c
+					full = os.path.join(dirpath, c)
 				
 				if s in filenames:
-					full = dirpath + '/' + s
+					full = os.path.join(dirpath, s)
 
 				if S in filenames:
-					full = dirpath + '/' + S
+					full = os.path.join(dirpath, S)
 
 				if full:
 					used_files.add(full)	
 	
-def get_cur_dir(filename):
-	b = filename.split('/')
-	b.pop()
-	c = '/'.join(b)
-	return c
-
 def get_parent_dir(path, level):
-	b = path.split('/')
-
 	while level:
-		b.pop()
+		path = os.path.split(path)[0]
 		level = level - 1
-
-	c = '/'.join(b)
-	return c
+	return path
 
 def get_depends_files(path):
 	for i in used_files:
@@ -57,20 +56,21 @@ def get_depends_files(path):
 				b = line.split(' ')[1]
 				if b[0]=='<':
 					b = b[1:-1]
-					filename =  path + '/include/' + b
+					filename =  os.path.join(path, 'include', b)
 					depends_files.add(filename)	
 				else:
 					b = b[1:-1]
 					a = b.split('/')
 					up_level = a.count('..')
-					dirpath = get_cur_dir(i)
+					dirpath = os.path.dirname(i)
 					parent = get_parent_dir(dirpath, up_level)
 
 					while up_level:
 						del a[0]
 						up_level = up_level - 1
 
-					filename = parent + '/' + '/'.join(a)
+					filename = os.path.join(parent, '/'.join(a))
+					print filename
 					depends_files.add(filename)	
 
 		depends_files.add(i)
@@ -83,7 +83,7 @@ def write_depends_files():
 def del_unused_files(path):
 	for dirpath, dirnames, filenames in os.walk(path):
 		for item in filenames:
-			d = dirpath + '/' +item 
+			d = os.path.join(dirpath, item)
 			if d not in depends_files:
 				os.remove(d)
 
@@ -103,7 +103,5 @@ if __name__ == '__main__':
 	del_unused_files(root)
 	a = remove_empty_dir(root)
 	while a:
-		print a
-		print '-------------------------------------------------------------------'
 		a = remove_empty_dir(root)
 
