@@ -31,20 +31,79 @@ def get_source_file(path):
 				if full:
 					used_files.add(full)	
 	
-def get_depends_files():
+def get_cur_dir(filename):
+	b = filename.split('/')
+	b.pop()
+	c = '/'.join(b)
+	return c
+
+def get_parent_dir(path, level):
+	b = path.split('/')
+
+	while level:
+		b.pop()
+		level = level - 1
+
+	c = '/'.join(b)
+	return c
+
+def get_depends_files(path):
 	for i in used_files:
 		with open(i) as f:
 			line = f.readline()
 			line = line.strip()
 			s = re.search('^#include', line)
 			if s:
-				print line
-#				print line.split(' ')[1]
-#				depends_files.add(line.split(' ')[1])
+				b = line.split(' ')[1]
+				if b[0]=='<':
+					b = b[1:-1]
+					filename =  path + '/include/' + b
+					depends_files.add(filename)	
+				else:
+					b = b[1:-1]
+					a = b.split('/')
+					up_level = a.count('..')
+					dirpath = get_cur_dir(i)
+					parent = get_parent_dir(dirpath, up_level)
+
+					while up_level:
+						del a[0]
+						up_level = up_level - 1
+
+					filename = parent + '/' + '/'.join(a)
+					depends_files.add(filename)	
+
+		depends_files.add(i)
+
+def write_depends_files():
+	with open('./depends_files', 'w') as f:
+		for i in depends_files:
+			f.write(i+'\n')
+
+def del_unused_files(path):
+	for dirpath, dirnames, filenames in os.walk(path):
+		for item in filenames:
+			d = dirpath + '/' +item 
+			if d not in depends_files:
+				os.remove(d)
+
+def remove_empty_dir(path):
+	deled_dir = set()
+	for dirpath, dirnames, filenames in os.walk(path):
+		if not filenames:
+			if not dirnames:
+				deled_dir.add(dirpath)
+				os.rmdir(dirpath)
+	return deled_dir	
 
 if __name__ == '__main__':
 	get_source_file(root)
-	print "num of used files : %d" % len(used_files)
-	get_depends_files()
-	print "num of depends files : %d" % len(depends_files)
-	
+	get_depends_files(root)
+
+	del_unused_files(root)
+	a = remove_empty_dir(root)
+	while a:
+		print a
+		print '-------------------------------------------------------------------'
+		a = remove_empty_dir(root)
+
