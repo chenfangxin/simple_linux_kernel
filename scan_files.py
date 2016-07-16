@@ -70,7 +70,6 @@ def get_depends_files(path):
 						up_level = up_level - 1
 
 					filename = os.path.join(parent, '/'.join(a))
-					print filename
 					depends_files.add(filename)	
 
 		depends_files.add(i)
