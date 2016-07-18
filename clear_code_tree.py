@@ -2,6 +2,7 @@
 
 
 import os
+import sys
 import re
 
 root='./linux-4.4.10'
@@ -14,30 +15,33 @@ def get_parent_dir(path, level):
 		level = level - 1
 	return path
 
-	
-def get_depends_files(i):
+def get_depends_files(item):
 	depends_fils=set()
-	with open(i) as f:
+	with open(item) as f:
 		for line in f.readlines():
 			line = line.strip()
 			s = re.search('^#include', line)
 			if s:
-				b = line.split(' ')[1]
+				l = line.split(' ')  # split by whitespace
+				if len(l)<=1:
+					l = line.split('	') # some statement split by tab
 
+				b = l[1]
+				b = b.strip()
 				if b[0]=='<':
 					b = b[1:-1]
 					filename =  os.path.join(root, 'include', b)
 					if os.path.isfile(filename):
-						depends_fils.add(filename)	
+						depends_fils.add(filename)
 					else:
 						filename =  os.path.join(root, 'arch/x86/include', b)
 						if os.path.isfile(filename):
-							depends_fils.add(filename)	
+							depends_fils.add(filename)
 				else:
 					b = b[1:-1]
 					a = b.split('/')
 					up_level = a.count('..')
-					dirpath = os.path.dirname(i)
+					dirpath = os.path.dirname(item)
 					parent = get_parent_dir(dirpath, up_level)
 
 					while up_level:
@@ -45,7 +49,12 @@ def get_depends_files(i):
 						up_level = up_level - 1
 
 					filename = os.path.join(parent, '/'.join(a))
-					depends_fils.add(filename)	
+					if os.path.isfile(filename):
+						depends_fils.add(filename)
+
+					filename = os.path.join(parent, 'include', '/'.join(a))
+					if os.path.isfile(filename):
+						depends_fils.add(filename)
 	return depends_fils
 
 def get_source_file(path):
@@ -82,8 +91,6 @@ def get_source_file(path):
 					a = get_depends_files(full)
 					used_files.update(a)
 
-					if full=='./linux-4.4.10/net/ipv4/sysctl_net_ipv4.c':
-						print used_files
 
 def expand_depends_files():
 	expand_files=set()
@@ -103,7 +110,7 @@ def get_makefile():
 			if i in l:
 				fullname = os.path.join(dirpath, i)
 				scripts.add(fullname)
-	used_files = used_files.update(scripts)
+	used_files.update(scripts)
 	
 	
 def write_depends_files():
@@ -129,16 +136,22 @@ def remove_empty_dir(path):
 
 if __name__ == '__main__':
 	get_source_file(root)
-	print "after get_source_file:" + str(len(used_files))
-	expand_depends_files()
-	print "after expand_depends_files:" + str(len(used_files))
 
-#	print used_files
-#	get_makefile()
+	if len(used_files)==0:
+		print "There're no object files"
+		sys.exit(0)
 
+	while 1:
+		l1 = len(used_files)
+		expand_depends_files()
+		l2 = len(used_files)
+		if l1==l2:
+			break
 
-#	remove_unused_files(root)
-#	a = remove_empty_dir(root)
-#	while a:
-#		a = remove_empty_dir(root)
+	get_makefile()
+
+	remove_unused_files(root)
+	a = remove_empty_dir(root)
+	while a:
+		a = remove_empty_dir(root)
 
