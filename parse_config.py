@@ -5,7 +5,7 @@ import re
 
 def parse_config(path):
 	configs = []
-	dst_file = path + '.config'
+	dst_file = os.path.join(path, '.config')
 	with open(dst_file) as f:
 		for line in f:
 			line=line.strip()

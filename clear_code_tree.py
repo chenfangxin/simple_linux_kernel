@@ -115,7 +115,8 @@ def remove_empty_dir(path):
 
 if __name__ == '__main__':
 	get_source_file(root)
-	get_makefile()				
+	get_makefile()
+
 	remove_unused_files(root)
 	a = remove_empty_dir(root)
 	while a:
