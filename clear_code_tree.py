@@ -23,6 +23,7 @@ def get_depends_files(i):
 			s = re.search('^#include', line)
 			if s:
 				b = line.split(' ')[1]
+
 				if b[0]=='<':
 					b = b[1:-1]
 					filename =  os.path.join(root, 'include', b)
@@ -79,14 +80,17 @@ def get_source_file(path):
 				if full:
 					used_files.add(full)
 					a = get_depends_files(full)
-					used_files.union(a)
+					used_files.update(a)
+
+					if full=='./linux-4.4.10/net/ipv4/sysctl_net_ipv4.c':
+						print used_files
 
 def expand_depends_files():
 	expand_files=set()
 	for item in used_files:
 		a = get_depends_files(item)	
-		expand_files.union(a)
-	used_files.union(expand_files)
+		expand_files.update(a)
+	used_files.update(expand_files)
 		
 def get_makefile():
 	scripts = set()
@@ -99,7 +103,7 @@ def get_makefile():
 			if i in l:
 				fullname = os.path.join(dirpath, i)
 				scripts.add(fullname)
-	used_files = used_files.union(scripts)
+	used_files = used_files.update(scripts)
 	
 	
 def write_depends_files():
@@ -129,7 +133,7 @@ if __name__ == '__main__':
 	expand_depends_files()
 	print "after expand_depends_files:" + str(len(used_files))
 
-	print used_files
+#	print used_files
 #	get_makefile()
 
 
