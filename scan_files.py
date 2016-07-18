@@ -7,7 +7,43 @@ import re
 root='./linux-4.4.10'
 
 used_files = set()
-depends_files = set()
+
+def get_parent_dir(path, level):
+	while level:
+		path = os.path.split(path)[0]
+		level = level - 1
+	return path
+
+def get_depends_files(i):
+	with open(i) as f:
+		line = f.readline()
+		line = line.strip()
+		s = re.search('^#include', line)
+		if s:
+			b = line.split(' ')[1]
+			if b[0]=='<':
+				b = b[1:-1]
+				filename =  os.path.join(root, 'include', b)
+				if os.path.isfile(filename):
+					used_files.add(filename)	
+				else:
+					filename =  os.path.join(root, 'arch/x86/include', b)
+					if os.path.isfile(filename):
+						used_files.add(filename)	
+			else:
+				b = b[1:-1]
+				a = b.split('/')
+				up_level = a.count('..')
+				dirpath = os.path.dirname(i)
+				parent = get_parent_dir(dirpath, up_level)
+
+				while up_level:
+					del a[0]
+					up_level = up_level - 1
+
+				filename = os.path.join(parent, '/'.join(a))
+				used_files.add(filename)	
+
 
 def get_source_file(path):
 	for dirpath, dirnames, filenames in os.walk(path):
@@ -39,52 +75,33 @@ def get_source_file(path):
 					full = os.path.join(dirpath, S)
 
 				if full:
-					used_files.add(full)	
+					used_files.add(full)
+					get_depends_files(full)
+
+def get_makefile():
+	scripts = set()
+	check_file = ['Makefile', 'Kconfig', 'Kbuild']
+	global used_files
+	for filename in used_files:
+		dirpath = os.path.dirname(filename)
+		l = os.listdir(dirpath)
+		for i in check_file:
+			if i in l:
+				fullname = os.path.join(dirpath, i)
+				scripts.add(fullname)
+	used_files = used_files.union(scripts)
 	
-def get_parent_dir(path, level):
-	while level:
-		path = os.path.split(path)[0]
-		level = level - 1
-	return path
-
-def get_depends_files(path):
-	for i in used_files:
-		with open(i) as f:
-			line = f.readline()
-			line = line.strip()
-			s = re.search('^#include', line)
-			if s:
-				b = line.split(' ')[1]
-				if b[0]=='<':
-					b = b[1:-1]
-					filename =  os.path.join(path, 'include', b)
-					depends_files.add(filename)	
-				else:
-					b = b[1:-1]
-					a = b.split('/')
-					up_level = a.count('..')
-					dirpath = os.path.dirname(i)
-					parent = get_parent_dir(dirpath, up_level)
-
-					while up_level:
-						del a[0]
-						up_level = up_level - 1
-
-					filename = os.path.join(parent, '/'.join(a))
-					depends_files.add(filename)	
-
-		depends_files.add(i)
-
+	
 def write_depends_files():
-	with open('./depends_files', 'w') as f:
-		for i in depends_files:
+	with open('./used_files', 'w') as f:
+		for i in used_files:
 			f.write(i+'\n')
 
-def del_unused_files(path):
+def remove_unused_files(path):
 	for dirpath, dirnames, filenames in os.walk(path):
 		for item in filenames:
 			d = os.path.join(dirpath, item)
-			if d not in depends_files:
+			if d not in used_files:
 				os.remove(d)
 
 def remove_empty_dir(path):
@@ -98,9 +115,8 @@ def remove_empty_dir(path):
 
 if __name__ == '__main__':
 	get_source_file(root)
-	get_depends_files(root)
-
-	del_unused_files(root)
+	get_makefile()				
+	remove_unused_files(root)
 	a = remove_empty_dir(root)
 	while a:
 		a = remove_empty_dir(root)
